@@ -30,15 +30,23 @@ export interface GameDefinition {
   learningGoals: string[];
 }
 
-export const CATEGORY_LABELS: Record<Category, { label: string; emoji: string }> = {
-  letras: { label: "Letras e palavras", emoji: "🔤" },
-  numeros: { label: "Números e lógica matemática", emoji: "🔢" },
-  cores: { label: "Cores e formas", emoji: "🎨" },
-  musica: { label: "Música e ritmo", emoji: "🎵" },
-  logica: { label: "Raciocínio e memória", emoji: "🧩" },
-  criatividade: { label: "Criatividade", emoji: "🖌️" },
-  mundo: { label: "Mundo e ciências", emoji: "🌍" },
-  emocoes: { label: "Emoções e convivência", emoji: "💛" },
+/**
+ * `label` é o nome completo, para o responsável e o painel.
+ * `short` é o que aparece nos chips do modo criança — nome longo em botão
+ * infantil não é lido, é ignorado.
+ */
+export const CATEGORY_LABELS: Record<
+  Category,
+  { label: string; short: string; emoji: string }
+> = {
+  letras: { label: "Letras e palavras", short: "Letras", emoji: "🔤" },
+  numeros: { label: "Números e lógica matemática", short: "Números", emoji: "🔢" },
+  cores: { label: "Cores e formas", short: "Cores", emoji: "🎨" },
+  musica: { label: "Música e ritmo", short: "Música", emoji: "🎵" },
+  logica: { label: "Raciocínio e memória", short: "Memória", emoji: "🧩" },
+  criatividade: { label: "Criatividade", short: "Arte", emoji: "🖌️" },
+  mundo: { label: "Mundo e ciências", short: "Mundo", emoji: "🌍" },
+  emocoes: { label: "Emoções e convivência", short: "Emoções", emoji: "💛" },
 };
 
 export const GAMES: GameDefinition[] = [

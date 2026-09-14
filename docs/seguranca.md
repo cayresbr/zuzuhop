@@ -186,6 +186,14 @@ Regra extra: um administrador não consegue suspender a própria conta.
   `Sec-Fetch-Site` em toda rota de API mutante (`isSameOrigin`). Server
   Actions já têm a checagem nativa do Next. Verificado: `Origin: evil.com`
   recebe 403.
+
+  A comparação é pelo **host** da origem contra o host que o navegador de fato
+  acessou (`Host`, ou `X-Forwarded-Host` atrás de proxy) e contra `APP_ORIGIN`.
+  Comparar a origem inteira quebrava dois casos reais, descobertos em teste com
+  navegador: acesso pelo IP da rede local (o tablet da criança abrindo
+  `http://192.168.0.10:3000`) e terminação de TLS no proxy, em que o app recebe
+  http e o navegador falou https. A garantia continua intacta, porque `Origin`
+  é preenchido pelo navegador e não pode ser forjado por um site atacante.
 - **CSP:** `default-src 'self'`, `frame-ancestors 'none'`, `object-src
   'none'`, `form-action 'self'`, `connect-src 'self'`. Nenhum recurso de
   terceiro carrega — nem fonte, nem script, nem analytics. Por isso os sons
@@ -256,7 +264,19 @@ gesto, para reduzir saída acidental.
 
 ---
 
-## 13. O que falta antes de ir a produção
+## 13. Configuração de ambiente que falha cedo
+
+`src/instrumentation.ts` valida `AUTH_SECRET` e `DATABASE_URL` **no boot do
+servidor**. Sem isso, um segredo ausente ou de exemplo só estourava quando
+alguém abria a primeira página que assina algo — um 500 opaco, com a causa
+escondida no log. Agora a falha aparece no terminal, no start, com o comando
+exato para resolver.
+
+`npm run setup` gera um `AUTH_SECRET` de 48 bytes aleatórios no lugar do
+placeholder do `.env.example`, de modo que o caminho normal de instalação nunca
+produz um app rodando com segredo fraco.
+
+## 14. O que falta antes de ir a produção
 
 Itens conhecidos e conscientes — nenhum deles bloqueia o desenvolvimento:
 

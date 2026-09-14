@@ -13,19 +13,48 @@ export function userAgent(req: Request): string {
 }
 
 /**
- * Defesa anti-CSRF: além de SameSite=Lax nos cookies, toda mutação precisa
- * vir de uma origem conhecida.
+ * Defesa anti-CSRF.
+ *
+ * O cabeçalho `Origin` é preenchido pelo navegador e não pode ser forjado por
+ * um site atacante — é essa a garantia em que a checagem se apoia.
+ *
+ * Comparamos o HOST da origem com os hosts legítimos: o que o navegador de
+ * fato acessou (`Host`, ou `X-Forwarded-Host` atrás de proxy reverso) e o
+ * configurado em APP_ORIGIN. Comparar a origem inteira quebraria dois casos
+ * reais: acesso por IP da rede local (o tablet da criança abrindo
+ * http://192.168.0.10:3000) e terminação de TLS no proxy, em que o app recebe
+ * http e o navegador falou https.
  */
 export function isSameOrigin(req: Request): boolean {
   const origin = req.headers.get("origin");
+
   if (!origin) {
     // Navegadores enviam Origin em todo POST/PUT/DELETE cross-site.
-    // Ausência costuma ser same-origin de form clássico; exigimos Sec-Fetch-Site.
+    // A ausência costuma ser same-origin de formulário clássico; confirmamos
+    // com Sec-Fetch-Site quando disponível.
     const site = req.headers.get("sec-fetch-site");
     return site === null || site === "same-origin" || site === "none";
   }
-  const allowed = new Set([env.appOrigin, new URL(req.url).origin]);
-  return allowed.has(origin);
+
+  let originHost: string;
+  try {
+    originHost = new URL(origin).host;
+  } catch {
+    return false;
+  }
+
+  const allowedHosts = new Set<string>();
+
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+  if (host) allowedHosts.add(host);
+
+  try {
+    allowedHosts.add(new URL(env.appOrigin).host);
+  } catch {
+    // APP_ORIGIN malformado: seguimos só com o host da requisição.
+  }
+
+  return allowedHosts.has(originHost);
 }
 
 export function jsonError(

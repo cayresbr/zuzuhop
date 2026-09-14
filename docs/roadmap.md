@@ -34,21 +34,17 @@ momento de encantamento que define a retenção.
 
 ## Fase 2 — Conteúdo, que é o produto
 
-### 2.1 Mascotes próprios — **G**
-É a maior lacuna em relação ao concorrente. Baby Bot, Cowy e Elliot são o
-ativo mais valioso do Lingokids: viram série, brinquedo e reconhecimento
-imediato. Sugestão para o Zuzuhop:
+### 2.1 Mascotes — ✅ primeira versão pronta, falta expandir
+**Zuzu** (coelha exploradora) e **Hop** (o robozinho que ela construiu) já
+existem em SVG animável, com quatro humores, e aparecem na landing, na escolha
+de perfil, na vitória, na despedida e no portão parental. Detalhes em
+[`docs/design.md`](design.md).
 
-- **Zuzu**, uma coelha exploradora (a marca já é "Zuzuhop").
-- **Hop**, um robozinho saltitante construído por ela.
-- Mais dois amigos com papéis (não com gênero): quem inventa, quem cuida.
-
-Regra que o concorrente segue e funciona: personagem tem **papel**
-(engenheira, artista, exploradora), nunca estereótipo de gênero. É assim que
-se atrai meninos e meninas com o mesmo conteúdo.
-
-Entregas: guia de estilo, ilustrações em SVG animável, presença como guia
-dentro de cada jogo (é o mascote que narra, não uma voz sem rosto).
+O que ainda falta:
+- Mais dois amigos com papéis (quem cuida, quem inventa histórias) — **M**
+- Presença dentro de cada jogo, e não só nas telas de moldura — **M**
+- Guia de estilo escrito, para manter coerência quando mais gente desenhar — **P**
+- Poses e expressões extras (pensando, comemorando junto, apontando) — **M**
 
 ### 2.2 Mais 15–20 jogos — **G**
 Nove jogos seguram uma semana, não um mês. Sugestões por categoria, todas com
@@ -99,13 +95,25 @@ dicas quando erra, menos quando acerta) mantém a criança na zona de
 desenvolvimento proximal e reduz abandono. Os dados de `GameProgress` já
 permitem começar simples.
 
-### 3.4 Adesivos e álbum — **P**
+### 3.4 Locução gravada por uma pessoa — **M**
+A narração hoje usa a Web Speech API com seleção inteligente de voz, prosódia
+ajustada e repertório de falas variadas (ver `docs/design.md`, seção 7). Ficou
+muito melhor que o padrão, mas a qualidade final **depende da voz instalada no
+aparelho** — em Linux com eSpeak, continua metálico.
+
+A solução definitiva é gravar as falas fixas com uma locutora ou locutor:
+instruções dos jogos, reforços ("isso!", "quase!"), nomes dos jogos e das
+categorias. São poucas centenas de falas curtas. A síntese fica só para o que é
+dinâmico, como o apelido da criança. É o maior salto de percepção de qualidade
+disponível por um custo baixo.
+
+### 3.5 Adesivos e álbum — **P**
 Recompensa **informacional**, não controladora: o adesivo diz "você dominou
 as cores", não "volte amanhã ou perde". O modelo `Reward` já existe no banco,
 faltam a lógica de desbloqueio e a tela do álbum. **Não implementar streak**
 — ver a seção de anti-padrões abaixo.
 
-### 3.5 Assinatura de verdade — **M**
+### 3.6 Assinatura de verdade — **M**
 Integração com Stripe (web) e com as lojas (iOS/Android). Regra inegociável:
 **nenhum caminho de compra dentro do modo criança**; upsell só na área da
 família, atrás do portão parental.
@@ -180,6 +188,5 @@ Se for para escolher só cinco coisas para os próximos dois meses:
 1. Recuperação de senha e verificação de e-mail (1.1) — risco real hoje.
 2. PWA offline (1.3) — diferencial imediato, custo baixo.
 3. Mais 8 jogos (2.2), começando por traçado de letras e karaokê.
-4. Relatório semanal por e-mail (3.1) — maior retorno por linha de código.
-5. Mascotes (2.1) — começar agora porque é o item mais demorado e tudo mais
-   depende dele visualmente.
+4. Locução gravada (3.4) — maior salto de percepção de qualidade por custo baixo.
+5. Relatório semanal por e-mail (3.1) — maior retorno por linha de código.

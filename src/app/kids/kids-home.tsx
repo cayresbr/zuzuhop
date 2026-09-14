@@ -1,18 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Bubbles, SkyScene } from "@/components/scenery";
+import { Zuzu } from "@/components/mascots";
 import { avatarEmoji, themeBg } from "@/lib/avatars";
 import { CATEGORY_LABELS, type Category } from "@/games/catalog";
-import { setSoundEnabled, sfx, speak } from "@/games/sound";
+import { greet, primeAudio, setSoundEnabled, sfx, speak } from "@/games/sound";
 
-const TILE_BG: Record<string, string> = {
-  grape: "bg-grape-500",
-  mango: "bg-mango-400",
-  mint: "bg-mint-500",
-  sky: "bg-sky-500",
-  coral: "bg-coral-500",
-  lime: "bg-lime-500",
+/** Cor do card + a sombra sólida embaixo dele. */
+const TILE: Record<string, { bg: string; shade: string }> = {
+  grape: { bg: "bg-grape-500", shade: "#4d22b4" },
+  mango: { bg: "bg-mango-400", shade: "#9c5203" },
+  mint: { bg: "bg-mint-500", shade: "#09684d" },
+  sky: { bg: "bg-sky-500", shade: "#0e4c8a" },
+  coral: { bg: "bg-coral-500", shade: "#9c1d1d" },
+  lime: { bg: "bg-lime-500", shade: "#456d12" },
 };
 
 interface GameTile {
@@ -35,103 +38,203 @@ export function KidsHome({
   remainingMinutes: number;
   games: GameTile[];
 }) {
+  /**
+   * Um filtro em vez de oito seções.
+   *
+   * Agrupar por categoria deixava a tela com um card por linha — nove jogos
+   * viravam uma coluna de três metros. Com uma grade única e chips de filtro,
+   * tudo cabe em uma tela e a criança ainda navega por assunto, tocando num
+   * emoji. Chip é alvo grande e não exige leitura.
+   */
+  const [filter, setFilter] = useState<Category | "tudo">("tudo");
+
   useEffect(() => {
     setSoundEnabled(child.soundEnabled);
-    const timer = window.setTimeout(
-      () => speak(`Oi, ${child.nickname}! O que vamos brincar hoje?`),
-      700,
-    );
+    primeAudio();
+    const timer = window.setTimeout(() => greet(child.nickname), 800);
     return () => window.clearTimeout(timer);
   }, [child.nickname, child.soundEnabled]);
 
   const categories = [...new Set(games.map((game) => game.category))] as Category[];
+  const visible = filter === "tudo" ? games : games.filter((game) => game.category === filter);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-100 to-grape-100 pb-16">
-      <header className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-5 py-5">
-        <div className="flex items-center gap-3">
+    <SkyScene className="kid-mode">
+      <Bubbles />
+
+      <div className="mx-auto max-w-5xl px-4 pb-16 pt-5 sm:px-6">
+        {/* ------------------------------------------------------------ topo */}
+        <header className="relative flex items-center gap-4 rounded-blob bg-white/92 p-4 pr-3 shadow-lg backdrop-blur-sm sm:p-5">
           <span
-            className={`flex h-16 w-16 items-center justify-center rounded-full text-4xl ${themeBg(child.themeColor)}`}
+            className={`glossy relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full text-4xl ring-4 ring-white sm:h-20 sm:w-20 sm:text-5xl ${themeBg(child.themeColor)}`}
             aria-hidden
           >
             {avatarEmoji(child.avatar)}
           </span>
-          <div>
-            <p className="text-2xl font-extrabold text-ink">Oi, {child.nickname}!</p>
-            <p className="text-sm font-bold text-ink-soft">
-              ⏱️ {remainingMinutes} min de brincadeira hoje
+
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-display text-2xl font-extrabold text-ink sm:text-3xl">
+              Oi, {child.nickname}!
+            </p>
+            <p className="mt-1 inline-flex items-center gap-1.5 rounded-pill bg-mint-100 px-3 py-1 text-sm font-extrabold text-mint-700">
+              <span aria-hidden>⏱️</span>
+              {remainingMinutes} min de brincadeira hoje
             </p>
           </div>
+
+          <Zuzu
+            mood="feliz"
+            size={78}
+            className="hidden shrink-0 animate-breathe sm:block"
+          />
+
+          {/* Único caminho de saída do modo criança: passa pelo portão parental. */}
+          <Link
+            href="/kids/adultos"
+            onClick={() => sfx.tap()}
+            aria-label="Área dos adultos"
+            className="chunky tap-target flex shrink-0 items-center justify-center gap-2 bg-grape-100 px-4 font-display text-base font-extrabold text-grape-700"
+            style={{ "--chunky-shade": "#b99cff" } as React.CSSProperties}
+          >
+            <span aria-hidden>🔒</span>
+            <span className="hidden sm:inline">Adultos</span>
+          </Link>
+        </header>
+
+        {/* --------------------------------------------------------- filtros */}
+        <div
+          className="rail mt-5 flex gap-2 overflow-x-auto pb-2 sm:flex-wrap sm:overflow-visible"
+          role="group"
+          aria-label="Filtrar jogos por assunto"
+        >
+          <FilterChip
+            active={filter === "tudo"}
+            emoji="🌈"
+            label="Tudo"
+            onClick={() => {
+              setFilter("tudo");
+              sfx.pop();
+            }}
+          />
+          {categories.map((category) => (
+            <FilterChip
+              key={category}
+              active={filter === category}
+              emoji={CATEGORY_LABELS[category]?.emoji ?? "🎮"}
+              label={CATEGORY_LABELS[category]?.short ?? category}
+              onClick={() => {
+                setFilter(category);
+                sfx.pop();
+                speak(CATEGORY_LABELS[category]?.label ?? category);
+              }}
+            />
+          ))}
         </div>
 
-        {/* Único caminho de saída do modo criança: passa pelo portão parental. */}
-        <Link
-          href="/kids/adultos"
-          onClick={() => sfx.tap()}
-          className="tap-target flex items-center justify-center rounded-full bg-white/90 px-5 text-lg font-bold text-ink-soft shadow"
-        >
-          Adultos 🔒
-        </Link>
-      </header>
+        {/* ----------------------------------------------------------- jogos */}
+        <main className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          {visible.map((game, index) => {
+            const locked = game.isPremium && plan !== "plus";
+            const tile = TILE[game.color] ?? TILE.grape!;
+            const badge = CATEGORY_LABELS[game.category as Category]?.emoji;
 
-      <main className="mx-auto max-w-5xl px-5">
-        {categories.map((category) => {
-          const list = games.filter((game) => game.category === category);
-          return (
-            <section key={category} className="mb-8">
-              <h2 className="mb-3 text-xl font-extrabold text-ink">
-                <span aria-hidden>{CATEGORY_LABELS[category]?.emoji}</span>{" "}
-                {CATEGORY_LABELS[category]?.label ?? category}
-              </h2>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                {list.map((game) => {
-                  const locked = game.isPremium && plan !== "plus";
-                  const tile = TILE_BG[game.color] ?? TILE_BG.grape;
+            if (locked) {
+              return (
+                <div
+                  key={game.slug}
+                  className={`relative flex aspect-square flex-col items-center justify-center gap-3 rounded-blob ${tile.bg} p-4 opacity-55 shadow-lg`}
+                  aria-label={`${game.title} — disponível no plano Plus`}
+                >
+                  <span className="text-5xl grayscale sm:text-6xl" aria-hidden>
+                    {game.emoji}
+                  </span>
+                  <span className="rounded-pill bg-white/90 px-3 py-1 text-center font-display text-sm font-extrabold text-ink">
+                    {game.title}
+                  </span>
+                  <span
+                    className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-lg shadow"
+                    aria-hidden
+                  >
+                    🔒
+                  </span>
+                </div>
+              );
+            }
 
-                  if (locked) {
-                    return (
-                      <div
-                        key={game.slug}
-                        className={`relative flex aspect-square flex-col items-center justify-center gap-2 rounded-blob ${tile} p-4 opacity-60 shadow-lg`}
-                        aria-label={`${game.title} — disponível no plano Plus`}
-                      >
-                        <span className="text-5xl grayscale sm:text-6xl" aria-hidden>
-                          {game.emoji}
-                        </span>
-                        <span className="text-center text-sm font-extrabold text-white">
-                          {game.title}
-                        </span>
-                        <span className="absolute right-3 top-3 text-2xl" aria-hidden>
-                          🔒
-                        </span>
-                      </div>
-                    );
-                  }
+            return (
+              <Link
+                key={game.slug}
+                href={`/kids/jogo/${game.slug}`}
+                onClick={() => {
+                  primeAudio();
+                  sfx.pop();
+                  speak(game.title);
+                }}
+                className={`chunky chunky-card glossy hover-hop animate-pop-in relative flex aspect-square flex-col items-center justify-center gap-3 overflow-hidden ${tile.bg} p-4`}
+                style={
+                  {
+                    "--chunky-shade": tile.shade,
+                    animationDelay: `${index * 45}ms`,
+                  } as React.CSSProperties
+                }
+              >
+                <span className="dots absolute inset-0 opacity-25" aria-hidden />
 
-                  return (
-                    <Link
-                      key={game.slug}
-                      href={`/kids/jogo/${game.slug}`}
-                      onClick={() => {
-                        sfx.pop();
-                        speak(game.title);
-                      }}
-                      className={`flex aspect-square flex-col items-center justify-center gap-2 rounded-blob ${tile} p-4 shadow-lg transition hover:scale-105 active:scale-95`}
-                    >
-                      <span className="text-5xl sm:text-6xl" aria-hidden>
-                        {game.emoji}
-                      </span>
-                      <span className="text-center text-sm font-extrabold leading-tight text-white sm:text-base">
-                        {game.title}
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </section>
-          );
-        })}
-      </main>
-    </div>
+                {/* Selo de assunto: orienta sem exigir leitura */}
+                <span
+                  className="absolute left-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-base shadow-sm"
+                  aria-hidden
+                >
+                  {badge}
+                </span>
+
+                <span className="relative text-5xl drop-shadow sm:text-6xl" aria-hidden>
+                  {game.emoji}
+                </span>
+                <span className="relative rounded-pill bg-white/95 px-3 py-1 text-center font-display text-sm font-extrabold leading-tight text-ink sm:text-base">
+                  {game.title}
+                </span>
+              </Link>
+            );
+          })}
+        </main>
+
+        {visible.length === 0 ? (
+          <p className="mt-10 rounded-blob bg-white/90 p-8 text-center font-display text-xl font-extrabold text-ink-soft">
+            Nenhum jogo aqui ainda. Toque em <span aria-hidden>🌈</span> Tudo!
+          </p>
+        ) : null}
+      </div>
+    </SkyScene>
+  );
+}
+
+function FilterChip({
+  active,
+  emoji,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  emoji: string;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`flex shrink-0 items-center gap-2 rounded-pill px-4 py-2.5 font-display text-sm font-extrabold transition-transform duration-150 active:scale-95 ${
+        active
+          ? "bg-grape-500 text-white shadow-lg"
+          : "bg-white/90 text-ink-soft shadow-sm"
+      }`}
+    >
+      <span className="text-lg" aria-hidden>
+        {emoji}
+      </span>
+      {label}
+    </button>
   );
 }

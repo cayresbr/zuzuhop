@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { GameShell, WinOverlay } from "../components/GameShell";
 import { useGameSession } from "../components/useGameSession";
-import { sfx, speak } from "../sound";
+import { encourage, sfx, speak } from "../sound";
 import { shuffle, starsFromMistakes } from "../utils";
 
 /**
@@ -12,10 +12,10 @@ import { shuffle, starsFromMistakes } from "../utils";
  */
 
 const BUCKETS = [
-  { id: "vermelho", label: "vermelho", emoji: "🔴", className: "bg-coral-500" },
-  { id: "azul", label: "azul", emoji: "🔵", className: "bg-sky-500" },
-  { id: "amarelo", label: "amarelo", emoji: "🟡", className: "bg-mango-400" },
-  { id: "verde", label: "verde", emoji: "🟢", className: "bg-mint-500" },
+  { id: "vermelho", label: "vermelho", className: "bg-coral-500", shade: "#9c1d1d" },
+  { id: "azul", label: "azul", className: "bg-sky-500", shade: "#0e4c8a" },
+  { id: "amarelo", label: "amarelo", className: "bg-mango-400", shade: "#9c5203" },
+  { id: "verde", label: "verde", className: "bg-mint-500", shade: "#09684d" },
 ] as const;
 
 type BucketId = (typeof BUCKETS)[number]["id"];
@@ -90,6 +90,7 @@ export default function MundoDasCores() {
 
     if (piece.color === bucket) {
       sfx.correct();
+      // Repetir "morango vermelho" liga o objeto ao nome da cor.
       speak(`${piece.name} ${bucket}!`);
       const updated = pieces.map((item) =>
         item.id === piece.id ? { ...item, placed: true } : item,
@@ -105,7 +106,7 @@ export default function MundoDasCores() {
       }
     } else {
       sfx.wrong();
-      speak("Ops! Tente outra cor.");
+      encourage();
       setMistakes((current) => current + 1);
       setWrongBucket(bucket);
       window.setTimeout(() => setWrongBucket(null), 500);
@@ -119,7 +120,11 @@ export default function MundoDasCores() {
       color="grape"
       instruction="Toque numa figura e depois no balde da cor dela!"
     >
-      <div className="rounded-blob bg-white/95 p-5 shadow-xl">
+      <div className="rounded-blob bg-cream p-5 soft-shadow">
+        <p className="mb-3 text-center text-sm font-bold uppercase tracking-wide text-ink-faint">
+          {selected === null ? "Escolha uma figura" : "Agora toque no balde da cor"}
+        </p>
+
         <div className="flex min-h-32 flex-wrap items-center justify-center gap-3">
           {remaining.map((piece) => (
             <button
@@ -128,36 +133,53 @@ export default function MundoDasCores() {
               onClick={() => selectPiece(piece.id)}
               aria-label={piece.name}
               aria-pressed={selected === piece.id}
-              className={`tap-target rounded-3xl p-2 text-5xl transition sm:text-6xl ${
+              className={`tap-target rounded-3xl p-2 text-5xl transition-all duration-150 sm:text-6xl ${
                 selected === piece.id
                   ? "animate-wiggle scale-110 bg-grape-100 ring-4 ring-grape-500"
-                  : "active:scale-95"
+                  : "hover:scale-105 active:scale-95"
               }`}
             >
               <span aria-hidden>{piece.emoji}</span>
             </button>
           ))}
           {remaining.length === 0 ? (
-            <p className="text-2xl font-bold text-mint-600">Tudo organizado! 🎉</p>
+            <p className="font-display text-2xl font-extrabold text-mint-600">
+              Tudo organizado! 🎉
+            </p>
           ) : null}
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="mt-7 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {BUCKETS.map((bucket) => (
           <button
             key={bucket.id}
             type="button"
             onClick={() => dropInto(bucket.id)}
             aria-label={`Balde ${bucket.label}`}
-            className={`tap-target flex flex-col items-center gap-1 rounded-3xl ${bucket.className} px-3 py-6 text-white shadow-lg transition active:scale-95 ${
+            className={`chunky chunky-card glossy tap-target relative flex flex-col items-center gap-1 overflow-hidden ${bucket.className} px-3 py-5 text-white ${
               wrongBucket === bucket.id ? "animate-shake" : ""
-            }`}
+            } ${selected !== null ? "ring-4 ring-white/70" : ""}`}
+            style={{ "--chunky-shade": bucket.shade } as React.CSSProperties}
           >
-            <span className="text-5xl" aria-hidden>
-              🪣
+            {/* Balde desenhado: trapézio + alça, em vez de emoji genérico */}
+            <svg viewBox="0 0 64 56" width="58" height="50" aria-hidden="true">
+              <path
+                d="M 8 4 q 24 -10 48 0"
+                stroke="rgba(255,255,255,0.85)"
+                strokeWidth="4"
+                fill="none"
+                strokeLinecap="round"
+              />
+              <path
+                d="M 6 10 h 52 l -7 42 a 4 4 0 0 1 -4 3 h -30 a 4 4 0 0 1 -4 -3 z"
+                fill="rgba(255,255,255,0.95)"
+              />
+              <rect x="4" y="8" width="56" height="9" rx="4.5" fill="#ffffff" />
+            </svg>
+            <span className="font-display text-lg font-extrabold capitalize">
+              {bucket.label}
             </span>
-            <span className="text-lg font-bold capitalize">{bucket.label}</span>
           </button>
         ))}
       </div>

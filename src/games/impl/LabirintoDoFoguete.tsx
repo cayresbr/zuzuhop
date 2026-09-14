@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { GameShell, WinOverlay } from "../components/GameShell";
 import { useGameSession } from "../components/useGameSession";
-import { sfx, speak, tone } from "../sound";
+import { encourage, nextLevel, sfx, speak, tone } from "../sound";
 import { starsFromMistakes } from "../utils";
 
 /**
@@ -109,7 +109,7 @@ export default function LabirintoDoFoguete() {
             if (isBlocked(next)) {
               failed = true;
               sfx.wrong();
-              speak("Ops! Bateu. Vamos arrumar o caminho.");
+              speak("Ops, bateu! Vamos arrumar o caminho.");
               setCrashed(true);
               setMistakes((value) => value + 1);
               setRunning(false);
@@ -126,8 +126,8 @@ export default function LabirintoDoFoguete() {
             if (reachedGoal) {
               window.setTimeout(() => {
                 if (levelIndex < LEVELS.length - 1) {
-                  sfx.correct();
-                  speak("Chegou! Próximo planeta.");
+                  sfx.levelUp();
+                  nextLevel();
                   setLevelIndex(levelIndex + 1);
                   setProgram([]);
                   setRocket(findCell(LEVELS[levelIndex + 1]!, "S"));
@@ -140,7 +140,7 @@ export default function LabirintoDoFoguete() {
               }, 400);
             } else if (isLastStep) {
               sfx.wrong();
-              speak("Faltou pouco! Acrescente mais setas.");
+              encourage();
               setMistakes((value) => value + 1);
               setRunning(false);
             }
@@ -170,9 +170,12 @@ export default function LabirintoDoFoguete() {
       level={levelIndex + 1}
       totalLevels={LEVELS.length}
     >
-      <div className="rounded-blob bg-white/95 p-4 shadow-xl">
+      {/* Tabuleiro: céu estrelado, para o foguete ter onde voar */}
+      <div className="relative overflow-hidden rounded-blob bg-gradient-to-b from-[#1d1740] to-grape-700 p-4 soft-shadow">
+        <span className="dots pointer-events-none absolute inset-0 opacity-25" aria-hidden />
+
         <div
-          className="mx-auto grid w-fit gap-1"
+          className="relative mx-auto grid w-fit gap-1.5"
           style={{ gridTemplateColumns: `repeat(${grid[0]!.length}, minmax(0, 1fr))` }}
           role="img"
           aria-label={`Labirinto ${levelIndex + 1}. Foguete na linha ${rocket.y + 1}, coluna ${rocket.x + 1}.`}
@@ -185,11 +188,18 @@ export default function LabirintoDoFoguete() {
               return (
                 <div
                   key={`${x}-${y}`}
-                  className={`flex h-14 w-14 items-center justify-center rounded-2xl text-3xl sm:h-20 sm:w-20 sm:text-4xl ${
-                    isWall ? "bg-ink/80" : "bg-sky-100"
+                  className={`flex h-14 w-14 items-center justify-center rounded-2xl text-3xl transition-all duration-300 sm:h-20 sm:w-20 sm:text-4xl ${
+                    isWall
+                      ? "bg-coral-600/80"
+                      : isGoal
+                        ? "bg-mint-400/30 ring-2 ring-mint-300"
+                        : "bg-white/10"
                   } ${hasRocket && crashed ? "animate-shake" : ""}`}
                 >
-                  <span aria-hidden>
+                  <span
+                    className={hasRocket ? "animate-pop-in" : isGoal ? "animate-breathe" : ""}
+                    aria-hidden
+                  >
                     {hasRocket ? "🚀" : isGoal ? "🪐" : isWall ? "☄️" : ""}
                   </span>
                 </div>
@@ -199,18 +209,21 @@ export default function LabirintoDoFoguete() {
         </div>
       </div>
 
-      <div className="mt-4 min-h-20 rounded-blob bg-white/95 p-4 shadow-lg">
-        <p className="text-center text-sm font-bold uppercase tracking-wide text-ink-soft">
+      {/* Fila de comandos montada pela criança */}
+      <div className="mt-4 min-h-24 rounded-blob bg-cream p-4 soft-shadow">
+        <p className="text-center text-sm font-bold uppercase tracking-wide text-ink-faint">
           Seu programa
         </p>
-        <div className="mt-2 flex flex-wrap justify-center gap-2">
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
           {program.length === 0 ? (
-            <span className="text-lg text-ink-soft">Toque nas setas abaixo 👇</span>
+            <span className="text-lg font-bold text-ink-faint">
+              Toque nas setas aqui embaixo 👇
+            </span>
           ) : (
             program.map((dir, position) => (
               <span
                 key={`${dir}-${position}`}
-                className="animate-pop-in rounded-2xl bg-sky-100 px-3 py-2 text-3xl"
+                className="animate-pop-in flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-2xl ring-2 ring-sky-200"
                 aria-label={`Passo ${position + 1}: ${dir}`}
               >
                 <span aria-hidden>
@@ -230,7 +243,8 @@ export default function LabirintoDoFoguete() {
             onClick={() => addStep(arrow.dir)}
             disabled={running}
             aria-label={`Andar para ${arrow.dir}`}
-            className="tap-target rounded-3xl bg-white px-5 py-4 text-4xl shadow-lg transition active:scale-90 disabled:opacity-50"
+            className="chunky chunky-card tap-target bg-cream px-5 py-4 text-4xl disabled:opacity-50"
+            style={{ "--chunky-shade": "#a2d6ff" } as React.CSSProperties}
           >
             <span aria-hidden>{arrow.icon}</span>
           </button>
@@ -242,15 +256,17 @@ export default function LabirintoDoFoguete() {
           type="button"
           onClick={run}
           disabled={running || program.length === 0}
-          className="tap-target rounded-full bg-mint-500 px-7 py-4 text-xl font-bold text-white shadow-lg transition active:scale-95 disabled:opacity-50"
+          className="chunky tap-target bg-mint-500 px-7 py-4 text-xl font-extrabold text-white disabled:opacity-50"
+          style={{ "--chunky-shade": "#09684d" } as React.CSSProperties}
         >
-          Jogar ▶️
+          {running ? "Voando..." : "Jogar ▶️"}
         </button>
         <button
           type="button"
           onClick={removeLast}
           disabled={running}
-          className="tap-target rounded-full bg-mango-400 px-7 py-4 text-xl font-bold text-white shadow-lg transition active:scale-95 disabled:opacity-50"
+          className="chunky tap-target bg-mango-400 px-7 py-4 text-xl font-extrabold text-white disabled:opacity-50"
+          style={{ "--chunky-shade": "#9c5203" } as React.CSSProperties}
         >
           Apagar ↩️
         </button>
@@ -261,7 +277,8 @@ export default function LabirintoDoFoguete() {
             resetRocket();
             sfx.tap();
           }}
-          className="tap-target rounded-full bg-coral-500 px-7 py-4 text-xl font-bold text-white shadow-lg transition active:scale-95"
+          className="chunky tap-target bg-coral-500 px-7 py-4 text-xl font-extrabold text-white"
+          style={{ "--chunky-shade": "#9c1d1d" } as React.CSSProperties}
         >
           Recomeçar 🔁
         </button>

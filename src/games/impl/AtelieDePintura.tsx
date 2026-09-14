@@ -138,7 +138,7 @@ export default function AtelieDePintura() {
     pushSnapshot();
     fillWhite(canvas);
     sfx.tap();
-    speak("Folha limpinha!");
+    speak("Prontinho! Folha limpa pra recomeçar.");
   };
 
   return (
@@ -148,7 +148,8 @@ export default function AtelieDePintura() {
       color="lime"
       instruction="Escolha uma cor e desenhe o que você quiser!"
     >
-      <div className="rounded-blob bg-white p-3 shadow-xl">
+      {/* Moldura: o canvas vira "folha de papel" apoiada numa prancheta */}
+      <div className="rounded-blob bg-lime-700/25 p-3 soft-shadow">
         <canvas
           ref={canvasRef}
           onPointerDown={onPointerDown}
@@ -156,54 +157,75 @@ export default function AtelieDePintura() {
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
           aria-label="Área de desenho"
-          className="h-[52vh] w-full touch-none rounded-2xl border-4 border-dashed border-lime-400 bg-white"
+          className="h-[50vh] w-full touch-none rounded-3xl bg-white shadow-inner"
         />
       </div>
 
-      <div className="mt-4 rounded-blob bg-white/95 p-4 shadow-lg">
+      <div className="mt-4 rounded-blob bg-cream p-4 soft-shadow">
+        {/* Cores */}
         <div className="flex flex-wrap items-center justify-center gap-2">
-          {PALETTE.map((entry) => (
-            <button
-              key={entry.color}
-              type="button"
-              onClick={() => {
-                setColor(entry.color);
-                setStamp(null);
-                sfx.pop();
-                speak(entry.name);
-              }}
-              aria-label={entry.name}
-              aria-pressed={color === entry.color && !stamp}
-              className={`h-14 w-14 rounded-full border-4 shadow transition active:scale-90 ${
-                color === entry.color && !stamp
-                  ? "scale-110 border-ink"
-                  : "border-white"
-              }`}
-              style={{ backgroundColor: entry.color }}
-            />
-          ))}
+          {PALETTE.map((entry) => {
+            const active = color === entry.color && !stamp;
+            const isEraser = entry.name === "borracha";
+            return (
+              <button
+                key={entry.color}
+                type="button"
+                onClick={() => {
+                  setColor(entry.color);
+                  setStamp(null);
+                  sfx.pop();
+                  speak(entry.name);
+                }}
+                aria-label={entry.name}
+                aria-pressed={active}
+                className={`relative h-14 w-14 rounded-full border-4 transition-transform duration-150 active:scale-90 ${
+                  active ? "scale-110 border-ink" : "border-white"
+                }`}
+                style={{
+                  backgroundColor: entry.color,
+                  boxShadow: active
+                    ? "0 4px 0 0 rgba(43,33,64,0.35)"
+                    : "0 3px 0 0 rgba(43,33,64,0.18)",
+                }}
+              >
+                {isEraser ? (
+                  <span className="text-xl" aria-hidden>
+                    🧼
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
 
+        {/* Espessura do pincel */}
         <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-          {SIZES.map((size) => (
-            <button
-              key={size.width}
-              type="button"
-              onClick={() => {
-                setWidth(size.width);
-                setStamp(null);
-                sfx.pop();
-              }}
-              aria-label={`Pincel ${size.label}`}
-              aria-pressed={width === size.width && !stamp}
-              className={`tap-target flex items-center justify-center rounded-2xl px-4 ${
-                width === size.width && !stamp ? "bg-lime-100 ring-4 ring-lime-500" : "bg-cloud"
-              }`}
-            >
-              <span className={`${size.dot} rounded-full bg-ink`} />
-            </button>
-          ))}
+          {SIZES.map((size) => {
+            const active = width === size.width && !stamp;
+            return (
+              <button
+                key={size.width}
+                type="button"
+                onClick={() => {
+                  setWidth(size.width);
+                  setStamp(null);
+                  sfx.pop();
+                }}
+                aria-label={`Pincel ${size.label}`}
+                aria-pressed={active}
+                className={`tap-target flex items-center justify-center rounded-2xl px-5 transition ${
+                  active ? "bg-lime-100 ring-4 ring-lime-500" : "bg-white"
+                }`}
+              >
+                <span className={`${size.dot} rounded-full bg-ink`} />
+              </button>
+            );
+          })}
+        </div>
 
+        {/* Carimbos */}
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
           {STAMPS.map((item) => (
             <button
               key={item}
@@ -214,7 +236,7 @@ export default function AtelieDePintura() {
               }}
               aria-label={`Carimbo ${item}`}
               aria-pressed={stamp === item}
-              className={`tap-target rounded-2xl text-4xl transition active:scale-90 ${
+              className={`tap-target rounded-2xl text-4xl transition-transform duration-150 active:scale-90 ${
                 stamp === item ? "bg-lime-100 ring-4 ring-lime-500" : ""
               }`}
             >
@@ -223,18 +245,20 @@ export default function AtelieDePintura() {
           ))}
         </div>
 
-        <div className="mt-4 flex justify-center gap-3">
+        <div className="mt-5 flex justify-center gap-3">
           <button
             type="button"
             onClick={undo}
-            className="tap-target rounded-full bg-mango-400 px-6 py-3 text-lg font-bold text-white shadow transition active:scale-95"
+            className="chunky tap-target bg-mango-400 px-6 py-3 text-lg font-extrabold text-white"
+            style={{ "--chunky-shade": "#9c5203" } as React.CSSProperties}
           >
             Voltar ↩️
           </button>
           <button
             type="button"
             onClick={clear}
-            className="tap-target rounded-full bg-coral-500 px-6 py-3 text-lg font-bold text-white shadow transition active:scale-95"
+            className="chunky tap-target bg-coral-500 px-6 py-3 text-lg font-extrabold text-white"
+            style={{ "--chunky-shade": "#9c1d1d" } as React.CSSProperties}
           >
             Limpar 🧽
           </button>

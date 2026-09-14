@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getFamilySession } from "@/lib/session";
 import { getScreenTimeStatus } from "@/lib/screen-time";
-import { getGameComponent } from "@/games/registry";
+import { getGame } from "@/games/catalog";
 import { GamePlayer } from "../../game-player";
 
 export const dynamic = "force-dynamic";
@@ -37,12 +37,11 @@ export default async function JogoPage({
   }
   if (game.isPremium && session.guardian.plan !== "plus") redirect("/kids");
 
-  const Component = getGameComponent(slug);
-  if (!Component) notFound();
+  // O catálogo é a fonte da verdade do que existe; o componente em si é
+  // resolvido no cliente (ver comentário em games/registry.ts).
+  if (!getGame(slug)) notFound();
 
   return (
-    <GamePlayer soundEnabled={child.soundEnabled}>
-      <Component />
-    </GamePlayer>
+    <GamePlayer slug={slug} soundEnabled={child.soundEnabled} color={game.color} />
   );
 }

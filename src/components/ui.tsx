@@ -9,9 +9,7 @@ export function Card({
   className?: string;
 }) {
   return (
-    <div className={`rounded-3xl border border-grape-100 bg-white p-6 shadow-sm ${className}`}>
-      {children}
-    </div>
+    <div className={`rounded-blob bg-white p-6 soft-shadow ${className}`}>{children}</div>
   );
 }
 
@@ -27,7 +25,7 @@ export function PageTitle({
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-3xl font-extrabold text-ink">{title}</h1>
+        <h1 className="font-display text-3xl font-extrabold text-ink">{title}</h1>
         {subtitle ? <p className="mt-1 text-ink-soft">{subtitle}</p> : null}
       </div>
       {action}
@@ -38,29 +36,34 @@ export function PageTitle({
 export function Button({
   className = "",
   variant = "primary",
+  style,
   ...props
 }: ComponentProps<"button"> & { variant?: "primary" | "ghost" | "danger" }) {
   const styles = {
-    primary: "bg-grape-500 text-white hover:bg-grape-600",
-    ghost: "bg-grape-50 text-grape-700 hover:bg-grape-100",
-    danger: "bg-coral-500 text-white hover:bg-coral-600",
+    primary: { cls: "bg-grape-500 text-white", shade: "#4d22b4" },
+    ghost: { cls: "bg-grape-100 text-grape-700", shade: "#b99cff" },
+    danger: { cls: "bg-coral-500 text-white", shade: "#9c1d1d" },
   }[variant];
+
   return (
     <button
       {...props}
-      className={`rounded-full px-5 py-3 text-base font-bold shadow-sm transition disabled:opacity-60 ${styles} ${className}`}
+      style={{ "--chunky-shade": styles.shade, ...style } as React.CSSProperties}
+      className={`chunky px-6 py-3 font-display text-base font-extrabold disabled:opacity-60 ${styles.cls} ${className}`}
     />
   );
 }
 
 export function LinkButton({
   className = "",
+  style,
   ...props
 }: ComponentProps<typeof Link>) {
   return (
     <Link
       {...props}
-      className={`inline-flex items-center justify-center rounded-full bg-grape-500 px-5 py-3 text-base font-bold text-white shadow-sm transition hover:bg-grape-600 ${className}`}
+      style={{ "--chunky-shade": "#4d22b4", ...style } as React.CSSProperties}
+      className={`chunky inline-flex items-center justify-center bg-grape-500 px-6 py-3 font-display text-base font-extrabold text-white ${className}`}
     />
   );
 }
@@ -93,7 +96,7 @@ export function Field({
 }
 
 export const inputClass =
-  "w-full rounded-2xl border-2 border-grape-100 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-grape-500";
+  "w-full rounded-2xl border-2 border-grape-100 bg-grape-50/40 px-4 py-3.5 text-base text-ink outline-none transition focus:border-grape-500 focus:bg-white";
 
 export function Alert({
   tone = "info",
@@ -144,11 +147,11 @@ export function EmptyState({
   description?: string;
 }) {
   return (
-    <div className="rounded-3xl border-2 border-dashed border-grape-100 p-10 text-center">
-      <div className="text-5xl" aria-hidden>
+    <div className="rounded-blob border-4 border-dashed border-grape-200 bg-white/60 p-10 text-center">
+      <div className="animate-float-slow text-5xl" aria-hidden>
         {emoji}
       </div>
-      <p className="mt-3 text-lg font-bold text-ink">{title}</p>
+      <p className="mt-3 font-display text-lg font-extrabold text-ink">{title}</p>
       {description ? <p className="mt-1 text-ink-soft">{description}</p> : null}
     </div>
   );

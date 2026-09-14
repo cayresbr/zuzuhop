@@ -41,6 +41,11 @@ Poucas dependências, de propósito: `next`, `react`, `@prisma/client`, `zod`,
   cadeia de suprimentos em código que protege o painel administrativo.
 - **Sons sintetizados em Web Audio** em vez de arquivos de áudio: a CSP
   bloqueia terceiros, o bundle fica leve e o feedback é instantâneo.
+- **Tipografia pelo `next/font/google`**, que baixa no build e serve do próprio
+  domínio — mantém a CSP em `font-src 'self'` e evita qualquer requisição do
+  navegador da criança a terceiros.
+- **Mascotes em SVG inline** em vez de imagens: escalam sem perder nitidez, não
+  gastam requisição e trocam de expressão por prop.
 
 ---
 
@@ -95,11 +100,17 @@ scripts/
   verificar-seguranca.ts  testes de TOTP, portão parental e senha
 src/
   app/                 rotas (App Router)
-  components/ui.tsx    design system da área adulta
+  instrumentation.ts   valida o ambiente no boot (falha cedo e com instrução)
+  middleware.ts        guarda de borda por presença de cookie
+  components/
+    ui.tsx             design system da área adulta
+    mascots.tsx        Zuzu e Hop em SVG, com quatro humores
+    scenery.tsx        céu, noite, confete, bolhas, estrelinhas
   games/
     catalog.ts         fonte única da verdade do conteúdo
-    registry.ts        slug → componente, com import dinâmico
-    sound.ts           Web Audio + narração pt-BR
+    registry.ts        slug → componente (ssr:false: jogo sorteia ao montar)
+    sound.ts           efeitos sintetizados na Web Audio
+    voice.ts           escolha de voz, prosódia e repertório de falas
     utils.ts           shuffle, random, estrelas
     components/        GameShell, WinOverlay, useGameSession
     impl/              os nove jogos
@@ -152,11 +163,16 @@ Duas decisões que valem registro:
 ## Desenvolvimento
 
 ```bash
-cp .env.example .env      # ajuste AUTH_SECRET
 npm install
-npm run setup             # prisma db push + seed
-npm run dev               # http://localhost:3000
+npm run setup   # cria o .env com AUTH_SECRET aleatório, banco e catálogo
+npm run dev     # http://localhost:3000
 ```
+
+O `setup` roda `scripts/preparar-env.ts`, que gera um `AUTH_SECRET` de 48 bytes
+no lugar do placeholder. Sem isso, o app se recusa a subir em produção — e
+`src/instrumentation.ts` garante que essa recusa apareça **no boot, com a
+instrução de correção**, em vez de virar um 500 opaco na primeira página que
+assina algo.
 
 Outros comandos: `npm run build`, `npm run typecheck`,
 `npm run test:seguranca`, `npm run db:studio`.

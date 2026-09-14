@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { GameShell, WinOverlay } from "../components/GameShell";
 import { useGameSession } from "../components/useGameSession";
-import { sfx, speak } from "../sound";
+import { encourage, sfx, speak } from "../sound";
 import { shuffle, starsFromMistakes } from "../utils";
 
 /**
@@ -125,7 +125,7 @@ export default function ComoEuMeSinto() {
       }, 3200);
     } else {
       sfx.wrong();
-      speak("Hum... olhe o rostinho de novo.");
+      encourage();
       setMistakes((current) => current + 1);
     }
   };
@@ -139,17 +139,25 @@ export default function ComoEuMeSinto() {
       level={index + 1}
       totalLevels={rounds.length}
     >
-      <div className="rounded-blob bg-white/95 p-6 text-center shadow-xl">
+      {/* A história vira um balão de fala: fica claro que alguém está contando */}
+      <div className="relative rounded-blob bg-cream p-6 text-center soft-shadow">
+        <span
+          className="absolute -top-3 left-1/2 h-6 w-6 -translate-x-1/2 rotate-45 bg-cream"
+          aria-hidden
+        />
         <button
           type="button"
           onClick={() => {
             sfx.pop();
             speak(round.situation);
           }}
-          className="text-lg font-bold text-ink sm:text-2xl"
+          className="font-display text-lg font-extrabold leading-snug text-ink sm:text-2xl"
           aria-label="Ouvir a história de novo"
         >
-          {round.situation} 🔊
+          {round.situation}{" "}
+          <span className="inline-block text-xl" aria-hidden>
+            🔊
+          </span>
         </button>
 
         {revealed ? (
@@ -157,31 +165,34 @@ export default function ComoEuMeSinto() {
             <div className="text-7xl" aria-hidden>
               {round.emoji}
             </div>
-            <p className="mt-2 text-2xl font-extrabold capitalize text-coral-600">
+            <p className="mt-2 font-display text-2xl font-extrabold capitalize text-coral-600">
               {round.emotion}
             </p>
-            <p className="mt-2 text-lg text-ink-soft">{round.tip}</p>
+            <p className="mx-auto mt-3 max-w-sm rounded-3xl bg-coral-50 px-4 py-3 text-lg text-ink-soft">
+              {round.tip}
+            </p>
           </div>
         ) : (
-          <div className="mt-5 text-7xl opacity-30" aria-hidden>
+          <div className="mt-5 text-7xl opacity-25" aria-hidden>
             ❔
           </div>
         )}
       </div>
 
       {!revealed ? (
-        <div className="mt-6 grid grid-cols-3 gap-4">
+        <div className="mt-7 grid grid-cols-3 gap-4">
           {round.options.map((option) => (
             <button
               key={option.emotion}
               type="button"
               onClick={() => answer(option.emotion)}
-              className="tap-target flex flex-col items-center gap-1 rounded-3xl bg-white py-5 shadow-lg transition active:scale-95"
+              className="chunky chunky-card tap-target flex flex-col items-center gap-1 bg-cream py-5"
+              style={{ "--chunky-shade": "#ffb8b8" } as React.CSSProperties}
             >
               <span className="text-5xl sm:text-6xl" aria-hidden>
                 {option.emoji}
               </span>
-              <span className="text-base font-bold capitalize text-ink-soft">
+              <span className="font-display text-base font-extrabold capitalize text-ink-soft">
                 {option.emotion}
               </span>
             </button>

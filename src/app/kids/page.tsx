@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { getFamilySession } from "@/lib/session";
 import { getScreenTimeStatus } from "@/lib/screen-time";
 import { avatarEmoji, ageFromBirthYear, themeBg } from "@/lib/avatars";
+import { SkyScene } from "@/components/scenery";
+import { ZuzuEHop } from "@/components/mascots";
 import { entrarModoCrianca } from "../familia/actions";
 import { KidsHome } from "./kids-home";
 
@@ -25,30 +27,41 @@ export default async function KidsPage() {
   // Sem perfil ativo: a criança escolhe o seu, com avatares grandes.
   if (!activeChild) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-grape-400 to-grape-600 p-6">
-        <h1 className="text-center text-3xl font-extrabold text-white drop-shadow sm:text-4xl">
-          Quem vai brincar? <span aria-hidden>🎈</span>
-        </h1>
-        <div className="mt-10 flex flex-wrap justify-center gap-6">
-          {children.map((child) => (
-            <form key={child.id} action={entrarModoCrianca}>
-              <input type="hidden" name="childId" value={child.id} />
-              <button
-                type="submit"
-                className="flex w-36 flex-col items-center gap-3 rounded-blob bg-white/95 p-5 shadow-xl transition active:scale-95"
-              >
-                <span
-                  className={`flex h-24 w-24 items-center justify-center rounded-full text-6xl ${themeBg(child.themeColor)}`}
-                  aria-hidden
+      <SkyScene className="kid-mode">
+        <div className="flex min-h-screen flex-col items-center justify-center px-6 py-10">
+          <ZuzuEHop size={130} className="mb-2" />
+
+          <h1 className="rounded-blob bg-white/95 px-7 py-4 text-center font-display text-2xl font-extrabold text-ink shadow-lg sm:text-3xl">
+            Quem vai brincar hoje? <span aria-hidden>🎈</span>
+          </h1>
+
+          <div className="mt-9 flex flex-wrap justify-center gap-5">
+            {children.map((child) => (
+              <form key={child.id} action={entrarModoCrianca}>
+                <input type="hidden" name="childId" value={child.id} />
+                <button
+                  type="submit"
+                  className="chunky chunky-card flex w-40 flex-col items-center gap-3 bg-cream p-5"
+                  style={{ "--chunky-shade": "#d6c5ff" } as React.CSSProperties}
                 >
-                  {avatarEmoji(child.avatar)}
-                </span>
-                <span className="text-xl font-extrabold text-ink">{child.nickname}</span>
-              </button>
-            </form>
-          ))}
+                  <span
+                    className={`glossy relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full text-6xl ring-4 ring-white ${themeBg(child.themeColor)}`}
+                    aria-hidden
+                  >
+                    {avatarEmoji(child.avatar)}
+                  </span>
+                  <span className="font-display text-xl font-extrabold text-ink">
+                    {child.nickname}
+                  </span>
+                  <span className="text-sm font-bold text-ink-faint">
+                    {ageFromBirthYear(child.birthYear)} anos
+                  </span>
+                </button>
+              </form>
+            ))}
+          </div>
         </div>
-      </div>
+      </SkyScene>
     );
   }
 

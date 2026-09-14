@@ -59,13 +59,13 @@ export default async function FamiliaPage() {
               <Card key={child.id} className="flex flex-col">
                 <div className="flex items-center gap-4">
                   <div
-                    className={`flex h-16 w-16 items-center justify-center rounded-2xl text-4xl ${themeBg(child.themeColor)}`}
+                    className={`glossy relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl text-4xl ring-4 ring-white ${themeBg(child.themeColor)}`}
                     aria-hidden
                   >
                     {avatarEmoji(child.avatar)}
                   </div>
                   <div>
-                    <p className="text-lg font-extrabold text-ink">{child.nickname}</p>
+                    <p className="font-display text-lg font-extrabold text-ink">{child.nickname}</p>
                     <p className="text-sm text-ink-soft">
                       {ageFromBirthYear(child.birthYear)} anos
                     </p>
@@ -98,14 +98,16 @@ export default async function FamiliaPage() {
                     <button
                       type="submit"
                       disabled={blocked}
-                      className="w-full rounded-full bg-grape-500 px-4 py-3 font-bold text-white transition hover:bg-grape-600 disabled:opacity-50"
+                      style={{ "--chunky-shade": "#4d22b4" } as React.CSSProperties}
+                      className="chunky w-full bg-grape-500 px-4 py-3 font-display font-extrabold text-white disabled:opacity-50"
                     >
                       Brincar 🎈
                     </button>
                   </form>
                   <Link
                     href={`/familia/perfis/${child.id}`}
-                    className="rounded-full bg-grape-50 px-4 py-3 font-bold text-grape-700 transition hover:bg-grape-100"
+                    className="chunky flex items-center bg-grape-100 px-4 py-3 font-bold text-grape-700"
+                    style={{ "--chunky-shade": "#b99cff" } as React.CSSProperties}
                     aria-label={`Editar perfil de ${child.nickname}`}
                   >
                     ⚙️
@@ -118,7 +120,9 @@ export default async function FamiliaPage() {
       )}
 
       <Card className="mt-8 bg-grape-50">
-        <h2 className="text-lg font-extrabold text-ink">Como a segurança funciona aqui</h2>
+        <h2 className="font-display text-lg font-extrabold text-ink">
+          Como a segurança funciona aqui
+        </h2>
         <ul className="mt-3 space-y-2 text-sm text-ink-soft">
           <li>
             🔐 <strong>Só você entra com senha.</strong> A criança entra pelo perfil,

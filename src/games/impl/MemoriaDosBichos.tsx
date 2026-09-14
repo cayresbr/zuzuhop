@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { GameShell, WinOverlay } from "../components/GameShell";
 import { useGameSession } from "../components/useGameSession";
-import { sfx, speak } from "../sound";
+import { encourage, nextLevel, sfx, speak } from "../sound";
 import { shuffle, starsFromMistakes } from "../utils";
 
 const ANIMALS = [
@@ -86,7 +86,8 @@ export default function MemoriaDosBichos() {
         setFlipped([]);
         setLocked(false);
         sfx.correct();
-        speak(first.name);
+        // Nomear o bicho encontrado transforma o acerto em vocabulário.
+        speak(`${first.name}!`);
       }, 420);
     } else {
       setMistakes((value) => value + 1);
@@ -94,6 +95,7 @@ export default function MemoriaDosBichos() {
         setFlipped([]);
         setLocked(false);
         sfx.wrong();
+        encourage();
       }, 900);
     }
   };
@@ -103,7 +105,8 @@ export default function MemoriaDosBichos() {
     if (cards.length === 0 || !cards.every((card) => card.matched)) return;
     const timer = window.setTimeout(() => {
       if (level < LEVELS.length - 1) {
-        speak("Muito bem! Próxima fase.");
+        sfx.levelUp();
+        nextLevel();
         setLevel(level + 1);
         startLevel(level + 1);
       } else {
@@ -115,6 +118,7 @@ export default function MemoriaDosBichos() {
   }, [cards, level, startLevel, finish, mistakes]);
 
   const columns = cards.length <= 6 ? "grid-cols-3" : "grid-cols-4";
+  const matched = cards.filter((card) => card.matched).length / 2;
 
   return (
     <GameShell
@@ -125,6 +129,13 @@ export default function MemoriaDosBichos() {
       level={level + 1}
       totalLevels={LEVELS.length}
     >
+      <div className="mx-auto mb-4 flex w-fit items-center gap-2 rounded-pill bg-white/90 px-5 py-2 font-extrabold text-mango-700 shadow">
+        <span aria-hidden>🐾</span>
+        <span>
+          {matched} de {cards.length / 2} pares
+        </span>
+      </div>
+
       <div className={`mx-auto grid max-w-2xl gap-3 ${columns}`}>
         {cards.map((card) => {
           const isOpen = card.matched || flipped.includes(card.id);
@@ -135,13 +146,37 @@ export default function MemoriaDosBichos() {
               onClick={() => handleFlip(card.id)}
               disabled={card.matched}
               aria-label={isOpen ? card.name : "Carta virada para baixo"}
-              className={`tap-target aspect-square rounded-3xl text-5xl shadow-lg transition-all duration-200 sm:text-6xl ${
-                isOpen
-                  ? "bg-white scale-100"
-                  : "bg-mango-600 text-transparent hover:scale-105 active:scale-95"
-              } ${card.matched ? "animate-pop-in opacity-60" : ""}`}
+              className={`chunky chunky-card tap-target relative aspect-square overflow-hidden text-5xl sm:text-6xl ${
+                isOpen ? "bg-cream" : "bg-mango-500"
+              } ${card.matched ? "opacity-70" : ""}`}
+              style={
+                {
+                  "--chunky-shade": isOpen ? "#ffdd8a" : "#9c5203",
+                } as React.CSSProperties
+              }
             >
-              <span aria-hidden>{isOpen ? card.emoji : "❓"}</span>
+              {isOpen ? (
+                <span className="animate-pop-in block" aria-hidden>
+                  {card.emoji}
+                </span>
+              ) : (
+                /* Verso estampado: a carta parece um objeto, não um retângulo */
+                <span className="flex h-full w-full items-center justify-center" aria-hidden>
+                  <span className="dots absolute inset-0 opacity-40" />
+                  <svg viewBox="0 0 64 64" className="relative h-2/5 w-2/5 fill-white/85">
+                    <ellipse cx="20" cy="18" rx="7" ry="9" />
+                    <ellipse cx="33" cy="13" rx="7" ry="10" />
+                    <ellipse cx="46" cy="19" rx="7" ry="9" />
+                    <ellipse cx="54" cy="33" rx="6" ry="8" />
+                    <path d="M 33 30 c 12 0 20 10 20 17 c 0 7 -8 9 -20 9 c -12 0 -20 -2 -20 -9 c 0 -7 8 -17 20 -17 z" />
+                  </svg>
+                </span>
+              )}
+              {card.matched ? (
+                <span className="absolute right-1.5 top-1.5 text-lg" aria-hidden>
+                  ✅
+                </span>
+              ) : null}
             </button>
           );
         })}

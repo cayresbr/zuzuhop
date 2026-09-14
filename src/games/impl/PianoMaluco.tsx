@@ -3,17 +3,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GameShell, WinOverlay } from "../components/GameShell";
 import { useGameSession } from "../components/useGameSession";
-import { NOTES, sfx, speak, tone } from "../sound";
+import { NOTES, encourage, nextLevel, sfx, speak, tone } from "../sound";
 import { randomInt, starsFromMistakes } from "../utils";
 
 /** Versão infantil do "Genius": escute a sequência e repita. */
 
 const KEYS = [
-  { id: 0, note: NOTES.do, label: "dó", className: "bg-coral-500", emoji: "🍓" },
-  { id: 1, note: NOTES.re, label: "ré", className: "bg-mango-400", emoji: "🍌" },
-  { id: 2, note: NOTES.mi, label: "mi", className: "bg-mint-500", emoji: "🥝" },
-  { id: 3, note: NOTES.fa, label: "fá", className: "bg-sky-500", emoji: "🫐" },
-  { id: 4, note: NOTES.sol, label: "sol", className: "bg-grape-500", emoji: "🍇" },
+  { id: 0, note: NOTES.do, label: "dó", className: "bg-coral-500", shade: "#9c1d1d", emoji: "🍓" },
+  { id: 1, note: NOTES.re, label: "ré", className: "bg-mango-400", shade: "#9c5203", emoji: "🍌" },
+  { id: 2, note: NOTES.mi, label: "mi", className: "bg-mint-500", shade: "#09684d", emoji: "🥝" },
+  { id: 3, note: NOTES.fa, label: "fá", className: "bg-sky-500", shade: "#0e4c8a", emoji: "🫐" },
+  { id: 4, note: NOTES.sol, label: "sol", className: "bg-grape-500", shade: "#4d22b4", emoji: "🍇" },
 ] as const;
 
 const MAX_ROUNDS = 6;
@@ -93,14 +93,14 @@ export default function PianoMaluco() {
         setWon(true);
         void finish(sequence.length * 20, starsFromMistakes(mistakes));
       } else {
-        sfx.correct();
-        speak("Boa! Agora ficou maior.");
+        sfx.levelUp();
+        nextLevel();
         setPhase("idle");
         window.setTimeout(() => nextRound(sequence), 900);
       }
     } else {
       sfx.wrong();
-      speak("Quase! Escute de novo.");
+      encourage();
       setMistakes((current) => current + 1);
       setPhase("idle");
       window.setTimeout(() => showSequence(sequence), 900);
@@ -116,36 +116,57 @@ export default function PianoMaluco() {
       level={Math.max(1, sequence.length)}
       totalLevels={MAX_ROUNDS}
     >
-      <div className="rounded-blob bg-white/95 p-4 shadow-xl">
+      <div className="rounded-blob bg-cream p-4 soft-shadow">
+        <p className="mb-3 text-center text-sm font-bold uppercase tracking-wide text-ink-faint">
+          {phase === "showing"
+            ? "Escutando... preste atenção!"
+            : freePlay
+              ? "Toque livre — faça a sua música"
+              : phase === "playing"
+                ? "Agora é a sua vez"
+                : "Toque em começar"}
+        </p>
+
         <div className="grid grid-cols-5 gap-2 sm:gap-3">
-          {KEYS.map((key) => (
-            <button
-              key={key.id}
-              type="button"
-              onClick={() => pressKey(key.id)}
-              disabled={phase === "showing"}
-              aria-label={`Tecla ${key.label}`}
-              className={`tap-target flex h-40 flex-col items-center justify-end gap-2 rounded-3xl ${key.className} pb-4 text-white shadow-lg transition disabled:opacity-70 sm:h-56 ${
-                highlight === key.id ? "scale-105 brightness-125" : "active:scale-95"
-              }`}
-            >
-              <span className="text-4xl sm:text-5xl" aria-hidden>
-                {key.emoji}
-              </span>
-              <span className="text-lg font-bold">{key.label}</span>
-            </button>
-          ))}
+          {KEYS.map((key) => {
+            const lit = highlight === key.id;
+            return (
+              <button
+                key={key.id}
+                type="button"
+                onClick={() => pressKey(key.id)}
+                disabled={phase === "showing"}
+                aria-label={`Tecla ${key.label}`}
+                className={`chunky chunky-card glossy tap-target relative flex h-44 flex-col items-center justify-end gap-2 overflow-hidden ${key.className} pb-4 text-white disabled:opacity-80 sm:h-60 ${
+                  lit ? "scale-105 brightness-125 saturate-150" : ""
+                }`}
+                style={{ "--chunky-shade": key.shade } as React.CSSProperties}
+              >
+                {/* Halo que acende quando a tecla toca */}
+                {lit ? (
+                  <span className="absolute inset-0 animate-pop-in bg-white/35" aria-hidden />
+                ) : null}
+                <span className="relative text-4xl sm:text-5xl" aria-hidden>
+                  {key.emoji}
+                </span>
+                <span className="relative font-display text-lg font-extrabold">
+                  {key.label}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <div className="mt-6 flex flex-wrap justify-center gap-3">
+      <div className="mt-7 flex flex-wrap justify-center gap-3">
         <button
           type="button"
           onClick={() => {
             sfx.tap();
             start();
           }}
-          className="tap-target rounded-full bg-white px-6 py-4 text-xl font-bold text-mint-600 shadow-lg transition active:scale-95"
+          className="chunky tap-target bg-cream px-7 py-4 text-xl font-extrabold text-mint-700"
+          style={{ "--chunky-shade": "#8bf0cd" } as React.CSSProperties}
         >
           {sequence.length === 0 ? "Começar 🎵" : "Recomeçar 🔁"}
         </button>
@@ -156,11 +177,17 @@ export default function PianoMaluco() {
             clearTimers();
             setPhase("idle");
             setFreePlay((value) => !value);
-            speak(freePlay ? "Modo desafio" : "Toque livre! Faça sua música.");
+            speak(freePlay ? "Modo desafio!" : "Toque livre! Faça a sua música.");
           }}
-          className={`tap-target rounded-full px-6 py-4 text-xl font-bold shadow-lg transition active:scale-95 ${
-            freePlay ? "bg-mango-400 text-white" : "bg-white text-mint-600"
+          aria-pressed={freePlay}
+          className={`chunky tap-target px-7 py-4 text-xl font-extrabold ${
+            freePlay ? "bg-mango-400 text-white" : "bg-cream text-mint-700"
           }`}
+          style={
+            {
+              "--chunky-shade": freePlay ? "#9c5203" : "#8bf0cd",
+            } as React.CSSProperties
+          }
         >
           Toque livre 🎶
         </button>

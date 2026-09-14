@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { Sparkles } from "@/components/scenery";
 import { GameShell, WinOverlay } from "../components/GameShell";
 import { useGameSession } from "../components/useGameSession";
-import { sfx, speak } from "../sound";
+import { encourage, sfx, speak } from "../sound";
 import { pick, randomInt, shuffle, starsFromMistakes } from "../utils";
 
 const THEMES = ["🚀", "🍎", "⭐", "🐠", "🎈", "🦕", "🍪", "⚽"];
@@ -72,7 +73,7 @@ export default function ContaComigo() {
       }, 1100);
     } else {
       sfx.wrong();
-      speak("Quase! Conte de novo.");
+      encourage();
       setMistakes((current) => current + 1);
       setFeedback("wrong");
       window.setTimeout(() => setFeedback("none"), 600);
@@ -89,10 +90,12 @@ export default function ContaComigo() {
       totalLevels={rounds.length}
     >
       <div
-        className={`rounded-blob bg-white/95 p-6 shadow-xl ${
+        className={`relative rounded-blob bg-cream p-6 soft-shadow ${
           feedback === "wrong" ? "animate-shake" : ""
         }`}
       >
+        {feedback === "right" ? <Sparkles /> : null}
+
         <div
           className="flex min-h-40 flex-wrap items-center justify-center gap-3"
           aria-label={`${round.count} itens para contar`}
@@ -101,32 +104,46 @@ export default function ContaComigo() {
             <button
               key={item}
               type="button"
-              // Tocar em cada item conta em voz alta: apoia a contagem um-a-um.
+              /* Tocar em cada item conta em voz alta: apoia a contagem um-a-um. */
               onClick={() => {
                 sfx.pop();
                 speak(String(item + 1));
               }}
-              className="animate-pop-in text-5xl transition active:scale-125 sm:text-6xl"
-              style={{ animationDelay: `${item * 60}ms` }}
+              className="animate-pop-in text-5xl transition-transform duration-150 active:scale-125 sm:text-6xl"
+              style={{ animationDelay: `${item * 70}ms` }}
               aria-label={`Item ${item + 1}`}
             >
               <span aria-hidden>{round.emoji}</span>
             </button>
           ))}
         </div>
+
+        <p className="mt-3 text-center text-sm font-bold text-ink-faint">
+          Toque em cada um para contar junto
+        </p>
       </div>
 
-      <div className="mt-6 grid grid-cols-3 gap-4">
-        {round.options.map((option) => (
-          <button
-            key={option}
-            type="button"
-            onClick={() => answer(option)}
-            className="tap-target rounded-3xl bg-white py-6 text-5xl font-extrabold text-sky-600 shadow-lg transition active:scale-95 sm:text-6xl"
-          >
-            {option}
-          </button>
-        ))}
+      <div className="mt-7 grid grid-cols-3 gap-4">
+        {round.options.map((option) => {
+          const isRight = feedback === "right" && option === round.count;
+          return (
+            <button
+              key={option}
+              type="button"
+              onClick={() => answer(option)}
+              className={`chunky chunky-card tap-target py-6 font-display text-5xl font-extrabold sm:text-6xl ${
+                isRight ? "bg-mint-400 text-white" : "bg-cream text-sky-600"
+              }`}
+              style={
+                {
+                  "--chunky-shade": isRight ? "#09684d" : "#a2d6ff",
+                } as React.CSSProperties
+              }
+            >
+              {option}
+            </button>
+          );
+        })}
       </div>
 
       {won ? (

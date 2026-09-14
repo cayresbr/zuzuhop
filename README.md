@@ -13,10 +13,9 @@ Lingokids, com controle parental de verdade e privacidade em primeiro lugar.
 ## Começando
 
 ```bash
-cp .env.example .env      # ajuste AUTH_SECRET antes de qualquer coisa
 npm install
-npm run setup             # cria o banco e popula o catálogo + admin
-npm run dev               # http://localhost:3000
+npm run setup   # cria o .env com segredo aleatório, o banco e o catálogo
+npm run dev     # http://localhost:3000
 ```
 
 **Primeiro acesso administrativo:** `/admin/login` com as credenciais de
@@ -67,6 +66,12 @@ permissões, log de auditoria filtrável e configuração do próprio 2FA.
 Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · Prisma ·
 SQLite em desenvolvimento, PostgreSQL em produção.
 
+Identidade visual própria: mascotes **Zuzu** e **Hop** em SVG animável,
+tipografia arredondada (Baloo 2), botões com profundidade física que afundam
+ao toque, cenários de céu e noite. Narração em pt-BR com seleção inteligente de
+voz e repertório de falas variadas — detalhes em
+[`docs/design.md`](docs/design.md).
+
 Cinco dependências no total. Autenticação, TOTP, portão parental e efeitos
 sonoros são implementação própria — os motivos estão em
 [`docs/arquitetura.md`](docs/arquitetura.md).
@@ -81,7 +86,7 @@ sonoros são implementação própria — os motivos estão em
 | `npm run build` | build de produção |
 | `npm run typecheck` | checagem de tipos |
 | `npm run test:seguranca` | testa TOTP, portão parental e hashing de senha |
-| `npm run setup` | cria o banco e roda o seed |
+| `npm run setup` | prepara o .env, cria o banco e roda o seed |
 | `npm run db:studio` | inspeciona o banco |
 
 ---
@@ -92,6 +97,7 @@ sonoros são implementação própria — os motivos estão em
 |---|---|
 | [`docs/pesquisa-lingokids.md`](docs/pesquisa-lingokids.md) | Estudo completo do Lingokids: método, navegação, jogos, personagens, modelo de negócio, UX infantil, gamificação, conformidade — e o que trouxemos de cada coisa |
 | [`docs/roadmap.md`](docs/roadmap.md) | O que sugiro implantar a seguir, priorizado, e os anti-padrões que decidimos não adotar |
+| [`docs/design.md`](docs/design.md) | Sistema de design, mascotes, movimento, som e como a voz deixou de soar robotizada |
 | [`docs/seguranca.md`](docs/seguranca.md) | Modelo de segurança completo e o que falta antes de produção |
 | [`docs/arquitetura.md`](docs/arquitetura.md) | Stack, decisões, mapa de rotas e como adicionar um jogo novo |
 

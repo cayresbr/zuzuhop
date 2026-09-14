@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { GameShell, WinOverlay } from "../components/GameShell";
 import { useGameSession } from "../components/useGameSession";
-import { sfx, speak } from "../sound";
+import { encourage, sfx, speak } from "../sound";
 import { pick, shuffle, starsFromMistakes } from "../utils";
 
 /** Padrões ABAB / AABB / ABC — base do pensamento algorítmico. */
@@ -87,7 +87,7 @@ export default function SequenciaMagica() {
       }, 1200);
     } else {
       sfx.wrong();
-      speak("Olhe o padrão de novo.");
+      encourage();
       setMistakes((current) => current + 1);
       setWrongPick(option);
       window.setTimeout(() => setWrongPick(null), 600);
@@ -103,21 +103,29 @@ export default function SequenciaMagica() {
       level={index + 1}
       totalLevels={rounds.length}
     >
-      <div className="rounded-blob bg-white/95 p-6 shadow-xl">
-        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4">
+      <div className="rounded-blob bg-cream p-6 soft-shadow">
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
           {round.visible.map((item, position) => (
             <span
               key={`${item}-${position}`}
-              className="animate-pop-in text-5xl sm:text-6xl"
-              style={{ animationDelay: `${position * 90}ms` }}
+              className="animate-pop-in flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-3xl bg-grape-50 text-5xl sm:h-24 sm:w-24 sm:text-6xl"
+              style={{ animationDelay: `${position * 100}ms` }}
               aria-hidden
             >
               {item}
             </span>
           ))}
+
+          {/* Seta de continuidade: deixa claro que a sequência segue */}
+          <span className="text-3xl text-grape-300" aria-hidden>
+            →
+          </span>
+
           <span
-            className={`flex h-20 w-20 items-center justify-center rounded-3xl border-4 border-dashed text-5xl sm:h-24 sm:w-24 sm:text-6xl ${
-              solved ? "border-mint-500 bg-mint-100" : "border-grape-400 bg-grape-50"
+            className={`flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-3xl border-4 border-dashed text-5xl transition-colors sm:h-24 sm:w-24 sm:text-6xl ${
+              solved
+                ? "animate-pop-in border-mint-400 bg-mint-100"
+                : "border-grape-300 bg-white"
             }`}
             aria-label={solved ? "Resposta correta" : "Peça que falta"}
           >
@@ -126,15 +134,16 @@ export default function SequenciaMagica() {
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-3 gap-4">
+      <div className="mt-7 grid grid-cols-3 gap-4">
         {round.options.map((option) => (
           <button
             key={option}
             type="button"
             onClick={() => answer(option)}
-            className={`tap-target rounded-3xl bg-white py-6 text-5xl shadow-lg transition active:scale-95 sm:text-6xl ${
-              wrongPick === option ? "animate-shake" : ""
+            className={`chunky chunky-card tap-target py-6 text-5xl sm:text-6xl ${
+              wrongPick === option ? "animate-shake bg-coral-100" : "bg-cream"
             }`}
+            style={{ "--chunky-shade": "#d6c5ff" } as React.CSSProperties}
             aria-label={`Escolher ${option}`}
           >
             <span aria-hidden>{option}</span>
