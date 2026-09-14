@@ -1,0 +1,290 @@
+// Zuzuhop — schema de dados
+//
+// Provider: sqlite em desenvolvimento. Para produção troque para "postgresql"
+// (o schema evita enums e tipos nativos justamente para permitir a troca sem
+// reescrita: campos de "enum" são String validadas por Zod na camada de app).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// CONTA DO RESPONSÁVEL (quem paga, consente e administra os perfis infantis)
+// ---------------------------------------------------------------------------
+
+model Guardian {
+  id           String @id @default(cuid())
+  email        String @unique
+  name         String
+  passwordHash String
+  passwordSalt String
+
+  // "active" | "suspended" | "deleted"
+  status String @default("active")
+  // "free" | "plus"
+  plan   String @default("free")
+
+  emailVerifiedAt DateTime?
+
+  // Trilha de consentimento (LGPD art. 14 / COPPA)
+  consentAcceptedAt DateTime?
+  consentVersion    String?
+  consentIp         String?
+  marketingOptIn    Boolean   @default(false)
+
+  // Proteção contra força bruta
+  failedLoginCount Int       @default(0)
+  lockedUntil      DateTime?
+  lastLoginAt      DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  children ChildProfile[]
+  sessions GuardianSession[]
+  tokens   VerificationToken[]
+
+  @@index([status])
+}
+
+model GuardianSession {
+  id         String    @id @default(cuid())
+  guardianId String
+  // Guardamos apenas o SHA-256 do token. O valor cru só existe no cookie.
+  tokenHash  String    @unique
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime  @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+
+  // Perfil infantil ativo nesta sessão (definido ao entrar no modo criança)
+  activeChildId String?
+
+  guardian Guardian @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+
+  @@index([guardianId])
+  @@index([expiresAt])
+}
+
+/// Tokens de uso único: verificação de e-mail e redefinição de senha.
+model VerificationToken {
+  id         String    @id @default(cuid())
+  guardianId String
+  // "email_verify" | "password_reset"
+  purpose    String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  guardian Guardian @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+
+  @@index([guardianId, purpose])
+}
+
+// ---------------------------------------------------------------------------
+// PERFIL INFANTIL — sem login próprio, sem e-mail, sem dados sensíveis.
+// ---------------------------------------------------------------------------
+
+model ChildProfile {
+  id         String @id @default(cuid())
+  guardianId String
+
+  // Apelido, não nome completo: minimização de dados.
+  nickname   String
+  avatar     String @default("panda")
+  // Cor do tema do perfil (a criança escolhe, sem estereótipo de gênero)
+  themeColor String @default("grape")
+
+  // Só o ano de nascimento: idade aproximada basta para curadoria de conteúdo.
+  birthYear Int
+
+  // Controles parentais
+  dailyLimitMinutes Int     @default(30)
+  // JSON com as categorias liberadas. null = todas.
+  allowedCategories String?
+  soundEnabled      Boolean @default(true)
+  musicEnabled      Boolean @default(true)
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guardian     Guardian       @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+  progress     GameProgress[]
+  playSessions PlaySession[]
+  rewards      Reward[]
+
+  @@index([guardianId])
+}
+
+// ---------------------------------------------------------------------------
+// CATÁLOGO DE CONTEÚDO
+// ---------------------------------------------------------------------------
+
+model Game {
+  id          String @id @default(cuid())
+  slug        String @unique
+  title       String
+  description String
+  // "letras" | "numeros" | "cores" | "musica" | "logica" | "criatividade" | "mundo" | "emocoes"
+  category    String
+  emoji       String
+  // Tokens de cor do design system (ex.: "grape", "mango")
+  color       String @default("grape")
+
+  minAge    Int     @default(2)
+  maxAge    Int     @default(8)
+  isPremium Boolean @default(false)
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  // Objetivos pedagógicos (JSON: string[])
+  learningGoals String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  progress GameProgress[]
+
+  @@index([category, isActive])
+}
+
+model GameProgress {
+  id             String @id @default(cuid())
+  childProfileId String
+  gameId         String
+
+  timesPlayed  Int      @default(0)
+  bestScore    Int      @default(0)
+  stars        Int      @default(0)
+  totalSeconds Int      @default(0)
+  lastPlayedAt DateTime @default(now())
+
+  child ChildProfile @relation(fields: [childProfileId], references: [id], onDelete: Cascade)
+  game  Game         @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([childProfileId, gameId])
+  @@index([childProfileId])
+}
+
+/// Uma sessão de brincadeira — base do limite de tempo de tela e dos relatórios.
+model PlaySession {
+  id             String    @id @default(cuid())
+  childProfileId String
+  startedAt      DateTime  @default(now())
+  endedAt        DateTime?
+  seconds        Int       @default(0)
+  // Dia local no formato YYYY-MM-DD, para somar o uso diário sem timezone math.
+  dayKey         String
+
+  child ChildProfile @relation(fields: [childProfileId], references: [id], onDelete: Cascade)
+
+  @@index([childProfileId, dayKey])
+}
+
+/// Conquistas/adesivos. Informativas (você dominou X), nunca coercitivas.
+model Reward {
+  id             String   @id @default(cuid())
+  childProfileId String
+  code           String
+  unlockedAt     DateTime @default(now())
+
+  child ChildProfile @relation(fields: [childProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([childProfileId, code])
+  @@index([childProfileId])
+}
+
+// ---------------------------------------------------------------------------
+// ADMINISTRAÇÃO — realm totalmente separado do realm das famílias.
+// ---------------------------------------------------------------------------
+
+model AdminUser {
+  id           String @id @default(cuid())
+  email        String @unique
+  name         String
+  passwordHash String
+  passwordSalt String
+
+  // "superadmin" | "suporte" | "conteudo"
+  role   String @default("suporte")
+  // "active" | "suspended"
+  status String @default("active")
+
+  // 2FA obrigatório para o painel administrativo
+  totpSecret    String?
+  totpEnabledAt DateTime?
+  recoveryCodes String? // JSON com hashes dos códigos de recuperação
+
+  failedLoginCount   Int       @default(0)
+  lockedUntil        DateTime?
+  lastLoginAt        DateTime?
+  mustChangePassword Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions AdminSession[]
+
+  @@index([status])
+}
+
+model AdminSession {
+  id         String    @id @default(cuid())
+  adminId    String
+  tokenHash  String    @unique
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime  @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+
+  admin AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+}
+
+/// Log de auditoria imutável: tudo que um admin faz fica registrado.
+model AuditLog {
+  id         String   @id @default(cuid())
+  // "admin" | "guardian" | "system"
+  actorType  String
+  actorId    String?
+  actorLabel String?
+  action     String
+  targetType String?
+  targetId   String?
+  ip         String?
+  userAgent  String?
+  metadata   String? // JSON
+  createdAt  DateTime @default(now())
+
+  @@index([actorType, actorId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+/// Tentativas de login para detecção de ataque e bloqueio por IP.
+model LoginAttempt {
+  id         String   @id @default(cuid())
+  // "guardian" | "admin"
+  realm      String
+  identifier String
+  ip         String?
+  success    Boolean
+  reason     String?
+  createdAt  DateTime @default(now())
+
+  @@index([realm, identifier, createdAt])
+  @@index([ip, createdAt])
+}
